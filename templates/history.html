@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Data History</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; color: #fff; }
+        th, td { padding: 10px; border-bottom: 1px solid #444; text-align: center; }
+        th { background: #242833; color: #56b7ff; }
+        .container { width: 90%; margin: 20px auto; max-width: 1000px; }
+        .back-btn { color: #56b7ff; text-decoration: none; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📂 Data History</h1>
+        <p>Showing last 100 records (Auto-delete > 7 days)</p>
+    </header>
+    <div class="container">
+        <a href="/" class="back-btn">← Back to Dashboard</a>
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Temp (°C)</th>
+                    <th>Humidity (%)</th>
+                    <th>Gas</th>
+                    <th>Soil</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                <tr>
+                    <td>{{ row.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>{{ row.temperature }}</td>
+                    <td>{{ row.humidity }}</td>
+                    <td>{{ row.gas_value }}</td>
+                    <td>{{ row.soil_moisture }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
