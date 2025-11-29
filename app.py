@@ -65,10 +65,22 @@ def receive_data():
         ldr = float(data.get('ldr_value', 0))
 
         # 2. Store Data
-        new_entry = SensorData(
-            temperature=temp, humidity=hum, soil_moisture=soil,
-            gas_value=gas, ldr_value=ldr, timestamp=datetime.now()
-        )
+        # 1. Get server time (UTC)
+    utc_now = datetime.now()
+    
+    # 2. Add 5 hours and 30 minutes for IST (India Standard Time)
+    ist_now = utc_now + timedelta(hours=5, minutes=30)
+    
+    # 3. Save the corrected time
+    new_entry = SensorData(
+        temperature=temperature,
+        humidity=humidity,
+        soil_moisture=soil_moisture,
+        gas_value=gas_value,
+        ldr_value=ldr_value,
+        flame_detected=flame_detected,
+        timestamp=ist_now.strftime("%Y-%m-%d %H:%M:%S") # <--- Fixed Timestamp
+    )
         db.session.add(new_entry)
         
         # 3. Run Cleanup (remove > 7 days old)
@@ -111,4 +123,5 @@ def get_latest():
 
 if __name__ == '__main__':
     # Use '0.0.0.0' to be accessible by ESP32 on the same WiFi
+
     app.run(host='0.0.0.0', port=5000, debug=True)
