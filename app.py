@@ -54,24 +54,26 @@ def history():
 def receive_data():
     data = request.get_json(force=True, silent=True)
     if not data:
-        return jsonify({"status": "error"}), 400
+        return jsonify({"status": "No JSON received"}), 400
 
+    # Defensive reads with defaults
     try:
-        # 1. Parse Data
-        temp = float(data.get('temperature', 0))
-        hum = float(data.get('humidity', 0))
-        soil = float(data.get('soil_moisture', 0))
-        gas = float(data.get('gas_value', 0))
-        ldr = float(data.get('ldr_value', 0))
+        temperature = float(data.get('temperature', 0.0))
+        humidity = float(data.get('humidity', 0.0))
+        soil_moisture = float(data.get('soil_moisture', 0.0))
+        gas_value = float(data.get('gas_value', 0.0))
+        ldr_value = float(data.get('ldr_value', 0.0))
+        flame_detected = bool(data.get('flame_detected', False))
+    except (ValueError, TypeError):
+        # ^^^ This "except" block was missing or broken in your code
+        return jsonify({"status": "Invalid data types"}), 400
 
-        # 2. Store Data
-        # 1. Get server time (UTC)
+    # --- TIMEZONE FIX ---
+    # 1. Get server time (UTC)
     utc_now = datetime.now()
-    
-    # 2. Add 5 hours and 30 minutes for IST (India Standard Time)
+    # 2. Add 5 hours and 30 minutes for IST
     ist_now = utc_now + timedelta(hours=5, minutes=30)
     
-    # 3. Save the corrected time
     new_entry = SensorData(
         temperature=temperature,
         humidity=humidity,
@@ -79,24 +81,31 @@ def receive_data():
         gas_value=gas_value,
         ldr_value=ldr_value,
         flame_detected=flame_detected,
-        timestamp=ist_now.strftime("%Y-%m-%d %H:%M:%S") # <--- Fixed Timestamp
+        # 3. Save the corrected time
+        timestamp=ist_now.strftime("%Y-%m-%d %H:%M:%S")
     )
-        db.session.add(new_entry)
-        
-        # 3. Run Cleanup (remove > 7 days old)
+    
+    db.session.add(new_entry)
+    
+    # Run cleanup to remove old data
+    try:
         cleanup_data()
-        
-        db.session.commit()
+    except Exception as e:
+        print(f"Cleanup error: {e}")
 
-        # 4. Check Health & Decide Buzzer Status
-        is_healthy = check_health(temp, hum, gas)
-        buzzer_status = not is_healthy # If NOT healthy, Buzzer = True
+    db.session.commit()
 
-        # 5. Send command back to ESP32
-        return jsonify({
-            "status": "success",
-            "buzzer": buzzer_status
-        }), 200
+    # Logic to check health
+    # (Adjust these numbers based on your preference)
+    is_healthy = True
+    if temperature < 20 or temperature > 35: is_healthy = False
+    if gas_value > 1000: is_healthy = False
+
+    # Return status to ESP32 (Controls the Buzzer)
+    return jsonify({
+        "status": "Data received",
+        "buzzer": not is_healthy
+    }), 200
 
     except Exception as e:
         print(f"Error: {e}")
@@ -125,3 +134,4 @@ if __name__ == '__main__':
     # Use '0.0.0.0' to be accessible by ESP32 on the same WiFi
 
     app.run(host='0.0.0.0', port=5000, debug=True)
+
