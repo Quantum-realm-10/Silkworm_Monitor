@@ -1,46 +1,242 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Data History</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <style>
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; color: #fff; }
-        th, td { padding: 10px; border-bottom: 1px solid #444; text-align: center; }
-        th { background: #242833; color: #56b7ff; }
-        .container { width: 90%; margin: 20px auto; max-width: 1000px; }
-        .back-btn { color: #56b7ff; text-decoration: none; font-size: 1.2em; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data History & Analytics — Silkworm Monitor</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <header>
-        <h1>📂 Data History</h1>
-        <p>Showing last 100 records (Auto-delete > 7 days)</p>
-    </header>
-    <div class="container">
-        <a href="/" class="back-btn">← Back to Dashboard</a>
-        <table>
-            <thead>
-                <tr>
-                    <th>Time</th>
-                    <th>Temp (°C)</th>
-                    <th>Humidity (%)</th>
-                    <th>Gas</th>
-                    <th>Soil</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in data %}
-                <tr>
-                    <td>{{ row.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                    <td>{{ row.temperature }}</td>
-                    <td>{{ row.humidity }}</td>
-                    <td>{{ row.gas_value }}</td>
-                    <td>{{ row.soil_moisture }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <a href="/" class="nav-brand">
+      <span class="brand-icon">🐛</span>
+      <span class="brand-title">SilkWormCare</span>
+      <span class="brand-badge">IoT Dashboard</span>
+    </a>
+    <ul class="nav-menu">
+      <li><a href="/" class="nav-link">📊 Real-Time Dashboard</a></li>
+      <li><a href="/history" class="nav-link active">📂 Data History</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div class="ist-clock-pill">
+        <span class="live-dot"></span>
+        <span id="ist-clock">IST: --:--:--</span>
+      </div>
     </div>
+  </header>
+
+  <main class="container">
+    
+    <!-- Page Header -->
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Database Log History</h1>
+        <p class="page-subtitle">Persisted telemetry records formatted in Indian Standard Time (IST — Asia/Kolkata)</p>
+      </div>
+      <div>
+        <a href="/api/export-csv" class="btn btn-primary">📥 Export CSV</a>
+      </div>
+    </div>
+
+    <!-- Analytics KPI Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8;">📊</div>
+        <div>
+          <div class="kpi-title">Total Database Records</div>
+          <div id="kpi-total" class="kpi-value">--</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background: rgba(249, 115, 22, 0.15); color: #f97316;">🌡️</div>
+        <div>
+          <div class="kpi-title">Average Temperature</div>
+          <div id="kpi-avg-temp" class="kpi-value">-- °C</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">💧</div>
+        <div>
+          <div class="kpi-title">Average Humidity</div>
+          <div id="kpi-avg-hum" class="kpi-value">-- %</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">⚠️</div>
+        <div>
+          <div class="kpi-title">Alert Incidents</div>
+          <div id="kpi-alerts" class="kpi-value">--</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toolbar: Search & Filters -->
+    <div class="toolbar-card card">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" class="form-input search-input" placeholder="Search by date, values, or status..." oninput="handleSearchInput()">
+      </div>
+
+      <div class="filter-tabs">
+        <button id="tab-all" class="filter-tab active" onclick="setFilter('all')">All Records</button>
+        <button id="tab-healthy" class="filter-tab" onclick="setFilter('healthy')">🟢 Optimal</button>
+        <button id="tab-alert" class="filter-tab" onclick="setFilter('alert')">🔴 Warnings</button>
+      </div>
+
+      <button onclick="loadHistory()" class="btn btn-secondary">🔄 Refresh</button>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>IST Timestamp</th>
+            <th>Temp (°C)</th>
+            <th>Humidity (%)</th>
+            <th>Soil Moisture</th>
+            <th>Gas (PPM)</th>
+            <th>Light (LDR)</th>
+            <th>Health Status</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">Loading database records...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination-wrap">
+      <div id="page-info" class="page-info">Showing records</div>
+      <div class="pagination-nav">
+        <button id="btn-prev" class="page-btn" onclick="changePage(-1)">← Previous</button>
+        <span id="page-num-display" style="font-size: 0.85rem; padding: 0 8px; color: var(--text-main);">Page 1</span>
+        <button id="btn-next" class="page-btn" onclick="changePage(1)">Next →</button>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    <p>Smart Silkworm Rearing Environment Monitor &copy; 2026 — IoT Mini Project (IST Timezone Asia/Kolkata)</p>
+  </footer>
+
+  <script>
+    // Live IST Clock
+    function updateISTClock() {
+      const now = new Date();
+      const options = { timeZone: 'Asia/Kolkata', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      const istTimeStr = new Intl.DateTimeFormat('en-GB', options).format(now);
+      document.getElementById('ist-clock').textContent = `IST: ${istTimeStr}`;
+    }
+    setInterval(updateISTClock, 1000);
+    updateISTClock();
+
+    // State Variables
+    let currentPage = 1;
+    let currentStatus = 'all';
+    let currentSearch = '';
+    let searchDebounceTimeout;
+
+    function setFilter(status) {
+      currentStatus = status;
+      currentPage = 1;
+      
+      document.getElementById('tab-all').className = status === 'all' ? 'filter-tab active' : 'filter-tab';
+      document.getElementById('tab-healthy').className = status === 'healthy' ? 'filter-tab active' : 'filter-tab';
+      document.getElementById('tab-alert').className = status === 'alert' ? 'filter-tab active' : 'filter-tab';
+
+      loadHistory();
+    }
+
+    function handleSearchInput() {
+      clearTimeout(searchDebounceTimeout);
+      searchDebounceTimeout = setTimeout(() => {
+        currentSearch = document.getElementById('search-input').value;
+        currentPage = 1;
+        loadHistory();
+      }, 300);
+    }
+
+    function changePage(delta) {
+      currentPage += delta;
+      loadHistory();
+    }
+
+    // Load History Data via REST API
+    async function loadHistory() {
+      const tbody = document.getElementById('table-body');
+      try {
+        const url = `/api/history?page=${currentPage}&per_page=15&status=${currentStatus}&search=${encodeURIComponent(currentSearch)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        // Update KPIs
+        document.getElementById('kpi-total').textContent = data.total_records;
+        document.getElementById('kpi-avg-temp').textContent = `${data.analytics.avg_temp} °C`;
+        document.getElementById('kpi-avg-hum').textContent = `${data.analytics.avg_hum} %`;
+        document.getElementById('kpi-alerts').textContent = data.analytics.alert_count;
+
+        // Render Table Rows
+        if (!data.items || data.items.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <div style="font-size: 2rem; margin-bottom: 8px;">📭</div>
+                <div>No database records match your search query or filter.</div>
+              </td>
+            </tr>
+          `;
+        } else {
+          tbody.innerHTML = data.items.map(row => `
+            <tr>
+              <td>#${row.id}</td>
+              <td class="time-cell">${row.timestamp}</td>
+              <td style="font-weight: 600; color: #f97316;">${row.temperature}</td>
+              <td style="font-weight: 600; color: #38bdf8;">${row.humidity}</td>
+              <td>${row.soil_moisture}</td>
+              <td>${row.gas_value}</td>
+              <td>${row.ldr_value}</td>
+              <td>
+                <span class="status-pill ${row.is_healthy ? 'pill-optimal' : 'pill-alert'}">
+                  ${row.is_healthy ? '🟢 Optimal' : '🔴 Alert'}
+                </span>
+              </td>
+            </tr>
+          `).join('');
+        }
+
+        // Update Pagination Info
+        document.getElementById('page-info').textContent = `Showing ${data.total_filtered > 0 ? (data.page - 1) * data.per_page + 1 : 0} - ${Math.min(data.page * data.per_page, data.total_filtered)} of ${data.total_filtered} filtered records (${data.total_records} total in DB)`;
+        document.getElementById('page-num-display').textContent = `Page ${data.page} of ${data.total_pages}`;
+        document.getElementById('btn-prev').disabled = data.page <= 1;
+        document.getElementById('btn-next').disabled = data.page >= data.total_pages;
+
+      } catch (err) {
+        console.error("Failed to load history:", err);
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 30px; color: #f87171;">
+              ⚠️ Error connecting to server or loading database records.
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadHistory();
+    });
+  </script>
 </body>
 </html>
+

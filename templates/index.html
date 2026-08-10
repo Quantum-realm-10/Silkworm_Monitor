@@ -2,92 +2,271 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Smart Silkworm Monitor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Silkworm Environment Monitor</title>
   <link rel="stylesheet" href="/static/style.css">
-  <style>
-    /* Simple overrides for Red/Green effects */
-    .bg-green { background-color: rgba(40, 167, 69, 0.2); border: 1px solid green; }
-    .bg-red { background-color: rgba(220, 53, 69, 0.2); border: 1px solid red; }
-    .history-btn {
-        display: inline-block; margin-top: 20px; padding: 10px 20px;
-        background: #56b7ff; color: #fff; text-decoration: none; border-radius: 5px;
-    }
-  </style>
+  <!-- Chart.js CDN for real-time environmental trends -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <header>
-    <h1>🐛 Smart Silkworm Monitoring</h1>
-    <p>Real-time Environment Dashboard</p>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <a href="/" class="nav-brand">
+      <span class="brand-icon">🐛</span>
+      <span class="brand-title">SilkWormCare</span>
+      <span class="brand-badge">IoT Dashboard</span>
+    </a>
+    <ul class="nav-menu">
+      <li><a href="/" class="nav-link active">📊 Real-Time Dashboard</a></li>
+      <li><a href="/history" class="nav-link">📂 Data History</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div class="ist-clock-pill">
+        <span class="live-dot"></span>
+        <span id="ist-clock">IST: --:--:--</span>
+      </div>
+    </div>
   </header>
 
-  <main class="dashboard" id="main-dash">
-    <section id="status" class="status normal">
-      <p id="status-text">Waiting for data...</p>
-    </section>
-
-    <section class="grid">
-      <div class="card"><h3>🌡️ Temperature</h3><p><span id="temp">--</span> °C</p></div>
-      <div class="card"><h3>💧 Humidity</h3><p><span id="hum">--</span> %</p></div>
-      <div class="card"><h3>🌱 Soil Moisture</h3><p><span id="soil">--</span></p></div>
-      <div class="card"><h3>💨 Gas Level</h3><p><span id="gas">--</span></p></div>
-      <div class="card"><h3>💡 Light</h3><p><span id="ldr">--</span></p></div>
-    </section>
-
-    <div style="text-align:center;">
-        <a href="/history" class="history-btn">📂 View Database History</a>
+  <main class="container">
+    
+    <!-- Page Header -->
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Real-Time Environment Monitoring</h1>
+        <p class="page-subtitle">Continuous silkworm rearing telemetry & health analysis</p>
+      </div>
+      <div>
+        <button onclick="fetchData()" class="btn btn-secondary">🔄 Refresh Data</button>
+      </div>
     </div>
 
-    <section class="footer">
-      <p>⏰ Last Updated: <span id="time">--</span></p>
+    <!-- Health Status Banner -->
+    <section id="health-banner" class="health-banner status-optimal">
+      <div class="health-status-header">
+        <div id="status-icon" class="status-badge-icon">✅</div>
+        <div>
+          <div id="status-title" class="status-title-text">Optimal Rearing Conditions</div>
+          <div id="status-desc" class="status-desc">All environmental parameters (temperature, humidity, air quality) are within safe ranges for silkworms.</div>
+          <div id="warnings-container" class="warnings-list"></div>
+        </div>
+      </div>
+      <div style="text-align: right; min-width: 140px;">
+        <div style="font-size: 0.78rem; color: var(--text-muted);">Last Updated (IST)</div>
+        <div id="last-updated-time" style="font-family: monospace; font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-top: 2px;">--</div>
+      </div>
     </section>
+
+    <!-- Sensor Metrics Cards Grid -->
+    <section class="sensor-grid">
+      <div class="card sensor-card temp-card">
+        <div class="sensor-card-header">
+          <span class="sensor-name">Temperature</span>
+          <span class="sensor-icon">🌡️</span>
+        </div>
+        <div class="sensor-value-wrap">
+          <span id="temp-val" class="sensor-val">--</span>
+          <span class="sensor-unit">°C</span>
+        </div>
+        <div class="sensor-optimal-pill">Target: 24.0 - 28.0 °C</div>
+      </div>
+
+      <div class="card sensor-card hum-card">
+        <div class="sensor-card-header">
+          <span class="sensor-name">Humidity</span>
+          <span class="sensor-icon">💧</span>
+        </div>
+        <div class="sensor-value-wrap">
+          <span id="hum-val" class="sensor-val">--</span>
+          <span class="sensor-unit">%</span>
+        </div>
+        <div class="sensor-optimal-pill">Target: 70.0 - 85.0 %</div>
+      </div>
+
+      <div class="card sensor-card soil-card">
+        <div class="sensor-card-header">
+          <span class="sensor-name">Soil Moisture</span>
+          <span class="sensor-icon">🪴</span>
+        </div>
+        <div class="sensor-value-wrap">
+          <span id="soil-val" class="sensor-val">--</span>
+          <span class="sensor-unit">%</span>
+        </div>
+        <div class="sensor-optimal-pill">Bed Moisture Level</div>
+      </div>
+
+      <div class="card sensor-card gas-card">
+        <div class="sensor-card-header">
+          <span class="sensor-name">Gas / Air Quality</span>
+          <span class="sensor-icon">💨</span>
+        </div>
+        <div class="sensor-value-wrap">
+          <span id="gas-val" class="sensor-val">--</span>
+          <span class="sensor-unit">PPM</span>
+        </div>
+        <div class="sensor-optimal-pill">Safe: &lt; 1500 PPM</div>
+      </div>
+
+      <div class="card sensor-card ldr-card">
+        <div class="sensor-card-header">
+          <span class="sensor-name">Light Level (LDR)</span>
+          <span class="sensor-icon">💡</span>
+        </div>
+        <div class="sensor-value-wrap">
+          <span id="ldr-val" class="sensor-val">--</span>
+          <span class="sensor-unit">Lux</span>
+        </div>
+        <div class="sensor-optimal-pill">Rearing Bed Light</div>
+      </div>
+    </section>
+
+    <!-- Environmental Trend Chart Section -->
+    <section style="margin-bottom: 28px;">
+      <div class="card">
+        <div class="chart-header">
+          <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; color: var(--text-main);">📈 Real-Time Environmental Trends</h3>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Temperature &amp; Humidity Telemetry</span>
+        </div>
+        <div class="chart-container" style="height: 320px;">
+          <canvas id="envChart"></canvas>
+        </div>
+      </div>
+    </section>
+
   </main>
 
-<script>
-async function fetchData() {
-  try {
-    const res = await fetch('/api/latest');
-    const data = await res.json();
-    
-    if (data.message) {
-        document.getElementById("status-text").textContent = "No data yet...";
-        return;
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <footer>
+    <p>Smart Silkworm Rearing Environment Monitor &copy; 2026 — IoT Mini Project (IST Timezone Asia/Kolkata)</p>
+  </footer>
+
+  <script>
+    // Live IST Clock Widget
+    function updateISTClock() {
+      const now = new Date();
+      const options = { timeZone: 'Asia/Kolkata', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      const istTimeStr = new Intl.DateTimeFormat('en-GB', options).format(now);
+      document.getElementById('ist-clock').textContent = `IST: ${istTimeStr}`;
+    }
+    setInterval(updateISTClock, 1000);
+    updateISTClock();
+
+    // Chart.js Setup
+    let envChart;
+    function initChart() {
+      const ctx = document.getElementById('envChart').getContext('2d');
+      envChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Temperature (°C)',
+              data: [],
+              borderColor: '#f97316',
+              backgroundColor: 'rgba(249, 115, 22, 0.1)',
+              tension: 0.35,
+              fill: true,
+              borderWidth: 2
+            },
+            {
+              label: 'Humidity (%)',
+              data: [],
+              borderColor: '#38bdf8',
+              backgroundColor: 'rgba(56, 189, 248, 0.1)',
+              tension: 0.35,
+              fill: true,
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 } } }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#64748b', font: { size: 11 } },
+              grid: { color: 'rgba(255,255,255,0.05)' }
+            },
+            y: {
+              ticks: { color: '#64748b', font: { size: 11 } },
+              grid: { color: 'rgba(255,255,255,0.05)' }
+            }
+          }
+        }
+      });
     }
 
-    // Update Values
-    document.getElementById("temp").textContent = data.temperature;
-    document.getElementById("hum").textContent = data.humidity;
-    document.getElementById("soil").textContent = data.soil_moisture;
-    document.getElementById("gas").textContent = data.gas_value;
-    document.getElementById("ldr").textContent = data.ldr_value;
-    document.getElementById("time").textContent = data.timestamp;
+    // Fetch Latest Data & Chart History
+    async function fetchData() {
+      try {
+        const [latestRes, historyRes] = await Promise.all([
+          fetch('/api/latest'),
+          fetch('/api/history?per_page=20')
+        ]);
 
-    // Visual Red/Green Effect based on Backend "is_healthy" flag
-    const dashboard = document.getElementById("main-dash");
-    const statusBox = document.getElementById("status");
-    const statusText = document.getElementById("status-text");
+        const latest = await latestRes.json();
+        const historyData = await historyRes.json();
 
-    if (data.is_healthy) {
-        statusBox.className = "status normal";
-        statusText.textContent = "✅ Environment Optimal for Silkworms";
-        // Remove red tint, add subtle green
-        dashboard.classList.remove("bg-red");
-        dashboard.classList.add("bg-green");
-    } else {
-        statusBox.className = "status alert";
-        statusText.textContent = "⚠️ WARNING: Unfavorable Conditions!";
-        // Remove green tint, add red
-        dashboard.classList.remove("bg-green");
-        dashboard.classList.add("bg-red");
+        if (latest.has_data) {
+          document.getElementById("temp-val").textContent = latest.temperature;
+          document.getElementById("hum-val").textContent = latest.humidity;
+          document.getElementById("soil-val").textContent = latest.soil_moisture;
+          document.getElementById("gas-val").textContent = latest.gas_value;
+          document.getElementById("ldr-val").textContent = latest.ldr_value;
+          document.getElementById("last-updated-time").textContent = latest.timestamp;
+
+          const banner = document.getElementById("health-banner");
+          const statusIcon = document.getElementById("status-icon");
+          const statusTitle = document.getElementById("status-title");
+          const statusDesc = document.getElementById("status-desc");
+          const warningsDiv = document.getElementById("warnings-container");
+
+          if (latest.is_healthy) {
+            banner.className = "health-banner status-optimal";
+            statusIcon.textContent = "✅";
+            statusTitle.textContent = "Optimal Rearing Conditions";
+            statusDesc.textContent = "Environmental parameters are in ideal ranges. Silkworms are safe & healthy.";
+            warningsDiv.innerHTML = "";
+          } else {
+            banner.className = "health-banner status-alert";
+            statusIcon.textContent = "⚠️";
+            statusTitle.textContent = "Suboptimal Conditions Detected!";
+            statusDesc.textContent = "One or more metrics are outside safe limits. Action recommended:";
+            
+            warningsDiv.innerHTML = (latest.warnings || []).map(w => 
+              `<div class="warning-item"><span>•</span><span>${w}</span></div>`
+            ).join('');
+          }
+        }
+
+        // Update Chart
+        if (historyData.items && historyData.items.length > 0) {
+          const items = [...historyData.items].reverse();
+          envChart.data.labels = items.map(item => item.timestamp.split(' ')[1] || item.timestamp);
+          envChart.data.datasets[0].data = items.map(item => item.temperature);
+          envChart.data.datasets[1].data = items.map(item => item.humidity);
+          envChart.update();
+        }
+
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
     }
 
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// Fetch every 2 seconds
-setInterval(fetchData, 2000);
-fetchData();
-</script>
+    // Auto-fetch every 3 seconds
+    document.addEventListener('DOMContentLoaded', () => {
+      initChart();
+      fetchData();
+      setInterval(fetchData, 3000);
+    });
+  </script>
 </body>
 </html>
+
