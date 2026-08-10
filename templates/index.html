@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Silkworm Monitor</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* Simple overrides for Red/Green effects */
+    .bg-green { background-color: rgba(40, 167, 69, 0.2); border: 1px solid green; }
+    .bg-red { background-color: rgba(220, 53, 69, 0.2); border: 1px solid red; }
+    .history-btn {
+        display: inline-block; margin-top: 20px; padding: 10px 20px;
+        background: #56b7ff; color: #fff; text-decoration: none; border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🐛 Smart Silkworm Monitoring</h1>
+    <p>Real-time Environment Dashboard</p>
+  </header>
+
+  <main class="dashboard" id="main-dash">
+    <section id="status" class="status normal">
+      <p id="status-text">Waiting for data...</p>
+    </section>
+
+    <section class="grid">
+      <div class="card"><h3>🌡️ Temperature</h3><p><span id="temp">--</span> °C</p></div>
+      <div class="card"><h3>💧 Humidity</h3><p><span id="hum">--</span> %</p></div>
+      <div class="card"><h3>🌱 Soil Moisture</h3><p><span id="soil">--</span></p></div>
+      <div class="card"><h3>💨 Gas Level</h3><p><span id="gas">--</span></p></div>
+      <div class="card"><h3>💡 Light</h3><p><span id="ldr">--</span></p></div>
+    </section>
+
+    <div style="text-align:center;">
+        <a href="/history" class="history-btn">📂 View Database History</a>
+    </div>
+
+    <section class="footer">
+      <p>⏰ Last Updated: <span id="time">--</span></p>
+    </section>
+  </main>
+
+<script>
+async function fetchData() {
+  try {
+    const res = await fetch('/api/latest');
+    const data = await res.json();
+    
+    if (data.message) {
+        document.getElementById("status-text").textContent = "No data yet...";
+        return;
+    }
+
+    // Update Values
+    document.getElementById("temp").textContent = data.temperature;
+    document.getElementById("hum").textContent = data.humidity;
+    document.getElementById("soil").textContent = data.soil_moisture;
+    document.getElementById("gas").textContent = data.gas_value;
+    document.getElementById("ldr").textContent = data.ldr_value;
+    document.getElementById("time").textContent = data.timestamp;
+
+    // Visual Red/Green Effect based on Backend "is_healthy" flag
+    const dashboard = document.getElementById("main-dash");
+    const statusBox = document.getElementById("status");
+    const statusText = document.getElementById("status-text");
+
+    if (data.is_healthy) {
+        statusBox.className = "status normal";
+        statusText.textContent = "✅ Environment Optimal for Silkworms";
+        // Remove red tint, add subtle green
+        dashboard.classList.remove("bg-red");
+        dashboard.classList.add("bg-green");
+    } else {
+        statusBox.className = "status alert";
+        statusText.textContent = "⚠️ WARNING: Unfavorable Conditions!";
+        // Remove green tint, add red
+        dashboard.classList.remove("bg-green");
+        dashboard.classList.add("bg-red");
+    }
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// Fetch every 2 seconds
+setInterval(fetchData, 2000);
+fetchData();
+</script>
+</body>
+</html>

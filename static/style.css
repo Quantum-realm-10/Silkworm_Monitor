@@ -1,0 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background: #0f1116;
+  color: #e6e6e6;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+
+/* Header */
+header {
+  text-align: center;
+  width: 100%;
+  background: #16191f;
+  padding: 30px 10px;
+  border-bottom: 2px solid #007bff;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+header h1 {
+  margin: 0;
+  font-size: 2.2em;
+  color: #56b7ff;
+}
+header p {
+  color: #b0b0b0;
+  margin-top: 8px;
+  font-weight: 300;
+}
+
+/* Dashboard Container */
+.dashboard {
+  background: #1b1e25;
+  border-radius: 15px;
+  width: 90%;
+  max-width: 950px;
+  margin: 40px 0;
+  padding: 30px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Status Bar */
+.status {
+  text-align: center;
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  margin-bottom: 25px;
+  transition: 0.3s;
+}
+.status.normal {
+  background: rgba(40,167,69,0.15);
+  color: #8fffa2;
+  border: 1px solid rgba(40,167,69,0.4);
+}
+.status.alert {
+  background: rgba(220,53,69,0.15);
+  color: #ff9e9e;
+  border: 1px solid rgba(220,53,69,0.4);
+}
+
+/* Sensor Cards */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+.card {
+  background: #242833;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  transition: 0.2s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+.card:hover {
+  background: #2a2f3b;
+  transform: translateY(-4px);
+}
+.card h3 {
+  color: #56b7ff;
+  margin: 0 0 10px;
+  font-size: 1em;
+}
+.card p {
+  font-size: 1.3em;
+  font-weight: 600;
+  margin: 0;
+  color: #fff;
+}
+
+/* Chart */
+.chart-section {
+  width: 100%;
+  margin: 35px 0 15px;
+}
+canvas {
+  width: 100%;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  margin-top: 10px;
+}
+#refresh-btn {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background 0.3s;
+}
+#refresh-btn:hover {
+  background: #339cff;
+}
+.footer p {
+  color: #b8b8b8;
+  margin-bottom: 10px;
+}
